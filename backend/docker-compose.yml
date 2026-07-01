@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-roosterviewcall}
+      POSTGRES_USER: ${DB_USERNAME:-rooster}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-rooster}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - roosterviewcall-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-rooster} -d ${DB_NAME:-roosterviewcall}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-roosterviewcall}
+      DB_USERNAME: ${DB_USERNAME:-rooster}
+      DB_PASSWORD: ${DB_PASSWORD:-rooster}
+      SERVER_PORT: ${SERVER_PORT:-8080}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  roosterviewcall-db-data:
